@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Aluno, AlunoFormData } from "@/types/aluno";
+import { Participante, ParticipanteFormData } from "@/types/participante";
 import Link from "next/link";
 
-interface AlunoFormProps {
-  dadosIniciais?: Aluno; // Se vier, é Edição. Se não, é Cadastro.
-  aoEnviar: (dados: AlunoFormData) => Promise<void>;
+interface ParticipanteFormProps {
+  dadosIniciais?: Participante; // Se vier, é Edição. Se não, é Cadastro.
+  aoEnviar: (dados: ParticipanteFormData) => Promise<void>;
   botaoTexto: string;
 }
 
-export default function AlunoForm({ dadosIniciais, aoEnviar, botaoTexto }: AlunoFormProps) {
-  const [formData, setFormData] = useState<AlunoFormData>({
+export default function ParticipanteForm({ dadosIniciais, aoEnviar, botaoTexto }: ParticipanteFormProps) {
+  const [formData, setFormData] = useState<ParticipanteFormData>({
     nome: "",
-    curso: "",
     email: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,7 +22,6 @@ export default function AlunoForm({ dadosIniciais, aoEnviar, botaoTexto }: Aluno
     if (dadosIniciais) {
       setFormData({
         nome: dadosIniciais.nome,
-        curso: dadosIniciais.curso,
         email: dadosIniciais.email,
       });
     }
@@ -43,20 +41,9 @@ export default function AlunoForm({ dadosIniciais, aoEnviar, botaoTexto }: Aluno
         <input
           required
           type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
           value={formData.nome}
           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold text-gray-700">Curso</label>
-        <input
-          required
-          type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-          value={formData.curso}
-          onChange={(e) => setFormData({ ...formData, curso: e.target.value })}
         />
       </div>
 
@@ -65,7 +52,7 @@ export default function AlunoForm({ dadosIniciais, aoEnviar, botaoTexto }: Aluno
         <input
           required
           type="email"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         />
@@ -75,7 +62,7 @@ export default function AlunoForm({ dadosIniciais, aoEnviar, botaoTexto }: Aluno
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-blue-600 text-white px-2 py-2 rounded-md font-bold hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+          className="bg-muttley-action text-white px-2 py-2 rounded-md font-bold hover:bg-muttley-dark transition-colors disabled:bg-muttley-light"
         >
           {isSubmitting ? "Processando..." : botaoTexto}
         </button>

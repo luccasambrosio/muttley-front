@@ -1,11 +1,11 @@
-export interface Palestrante {
+export interface Apresentador {
   id: number;
   nome: string;
   telefone: string;
   cpf: string;
 }
 
-export interface PalestranteFormData {
+export interface ApresentadorFormData {
   nome: string;
   telefone: string;
   cpf: string;

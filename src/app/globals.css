@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@import "tailwindcss";
+
+/* CORES PADRÃO DO MUTTLEY ADMIN */
+@theme {
+  --color-muttley-dark: #1e3a8a;
+  --color-muttley-action: #2563eb;
+  --color-muttley-light: #dbeafe;
+  --color-muttley-bg: #f8fafc;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -24,3 +34,4 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+

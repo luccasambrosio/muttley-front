@@ -1,17 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Palestrante, PalestranteFormData } from "@/types/palestrante";
+import { Apresentador, ApresentadorFormData } from "@/types/apresentador";
 
-interface PalestranteFormProps {
-  dadosIniciais?: Palestrante; // Se vier, é Edição. Se não, é Cadastro.
-  aoEnviar: (dados: PalestranteFormData) => Promise<void>;
+interface ApresentadorFormProps {
+  dadosIniciais?: Apresentador; // Se vier, é Edição. Se não, é Cadastro.
+  aoEnviar: (dados: ApresentadorFormData) => Promise<void>;
   botaoTexto: string;
 }
 
-export default function PalestranteForm({ dadosIniciais, aoEnviar, botaoTexto }: PalestranteFormProps) {
-  const [formData, setFormData] = useState<PalestranteFormData>({
+export default function ApresentadorForm({ dadosIniciais, aoEnviar, botaoTexto }: ApresentadorFormProps) {
+  const [formData, setFormData] = useState<ApresentadorFormData>({
     nome: "",
     telefone: "",
     cpf: "",
@@ -43,7 +42,7 @@ export default function PalestranteForm({ dadosIniciais, aoEnviar, botaoTexto }:
         <input
           required
           type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
           value={formData.nome}
           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
         />
@@ -54,7 +53,7 @@ export default function PalestranteForm({ dadosIniciais, aoEnviar, botaoTexto }:
         <input
           required
           type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
           value={formData.telefone}
           onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
         />
@@ -65,7 +64,7 @@ export default function PalestranteForm({ dadosIniciais, aoEnviar, botaoTexto }:
         <input
           required
           type="cpf"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
           value={formData.cpf}
           onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
         />
@@ -75,7 +74,7 @@ export default function PalestranteForm({ dadosIniciais, aoEnviar, botaoTexto }:
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-blue-600 text-white px-2 py-2 rounded-md font-bold hover:bg-blue-700 transition-colors disabled:bg-blue-300"
+          className="bg-muttley-action text-white px-2 py-2 rounded-md font-bold hover:bg-muttley-dark transition-colors disabled:bg-muttley-light"
         >
           {isSubmitting ? "Processando..." : botaoTexto}
         </button>

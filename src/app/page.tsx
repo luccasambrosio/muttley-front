@@ -9,7 +9,7 @@ export default function Home() {
       {/* Container principal tipo "Cartão" */}
       <div className="bg-white p-10 rounded-2xl shadow-lg border border-gray-100 text-center max-w-lg w-full">
         
-        <h1 className="text-4xl font-extrabold text-blue-900 mb-3">
+        <h1 className="text-4xl font-extrabold text-muttley-dark mb-3">
           Sistema de Gestão
         </h1>
         <p className="text-gray-500 mb-10">
@@ -20,17 +20,17 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           
           <Link 
-            href="/alunos"
-            className="flex-1 bg-blue-600 text-white font-bold py-4 px-6 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200"
+            href="/participantes"
+            className="flex-1 bg-muttley-action text-white font-bold py-4 px-6 rounded-lg shadow-sm hover:bg-blue-700 hover:shadow-md transition-all duration-200"
           >
-            Gerir Alunos
+            Gerir Participantes
           </Link>
           
           <Link 
-            href="/palestrantes"
-            className="flex-1 bg-indigo-600 text-white font-bold py-4 px-6 rounded-lg shadow-sm hover:bg-indigo-700 hover:shadow-md transition-all duration-200"
+            href="/apresentadores"
+            className="flex-1 bg-muttley-action text-white font-bold py-4 px-6 rounded-lg shadow-sm hover:bg-indigo-700 hover:shadow-md transition-all duration-200"
           >
-            Gerir Palestrantes
+            Gerir Apresentadores
           </Link>
 
         </div>
