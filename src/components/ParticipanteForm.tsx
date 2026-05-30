@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Participante, ParticipanteFormData } from "@/types/participante";
-import Link from "next/link";
 
 interface ParticipanteFormProps {
   dadosIniciais?: Participante; // Se vier, é Edição. Se não, é Cadastro.
@@ -14,7 +13,10 @@ export default function ParticipanteForm({ dadosIniciais, aoEnviar, botaoTexto }
   const [formData, setFormData] = useState<ParticipanteFormData>({
     nome: "",
     email: "",
+    cpf: "",
+    dataNascimento: "",
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Se for edição, preenche os campos quando os dados chegarem
@@ -23,50 +25,82 @@ export default function ParticipanteForm({ dadosIniciais, aoEnviar, botaoTexto }
       setFormData({
         nome: dadosIniciais.nome,
         email: dadosIniciais.email,
+        cpf: dadosIniciais.cpf,
+        dataNascimento: dadosIniciais.dataNascimento,
       });
     }
   }, [dadosIniciais]);
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await aoEnviar(formData);
-    setIsSubmitting(false);
+    try {
+      await aoEnviar(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 shadow-md rounded-lg space-y-4 border border-gray-100">
+    <form onSubmit={handleSubmit} className="bg-white p-6 shadow-sm rounded-lg space-y-4 border border-gray-100">
+      
       <div>
-        <label className="block text-sm font-semibold text-gray-700">Nome Completo</label>
+        <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
         <input
           required
           type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
+          className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
           value={formData.nome}
           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700">E-mail Institucional</label>
+        <label className="block text-sm font-bold text-gray-700 mb-1">E-mail Institucional</label>
         <input
           required
           type="email"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
+          className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         />
       </div>
 
-      <div className="flex justify-center items-center pt-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">CPF</label>
+          <input
+            required
+            type="text"
+            className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            placeholder="111.111.111-11"
+            value={formData.cpf}
+            onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1">Nascimento</label>
+          <input
+            required
+            type="date"
+            className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            value={formData.dataNascimento}
+            onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="pt-4">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="bg-muttley-action text-white px-2 py-2 rounded-md font-bold hover:bg-muttley-dark transition-colors disabled:bg-muttley-light"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors disabled:bg-blue-400"
         >
           {isSubmitting ? "Processando..." : botaoTexto}
         </button>
       </div>
+      
     </form>
   );
 }

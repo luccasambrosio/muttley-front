@@ -1,34 +1,41 @@
-// src/services/api.ts
-
-// Puxa a variável do .env. Se ela não existir (em produção, por exemplo), usa o localhost como fallback de segurança.
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083";
 
-// Esta função vai "envelopar" o fetch original do navegador
 export async function apiFetch(endpoint: string, options?: RequestInit) {
+  const token = typeof window !== "undefined" ? localStorage.getItem("muttley_token") : null;
+
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json", // Já garante que tudo que vai e volta é JSON
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
   });
 
-  // Intercepta erros globalmente (ex: se o Spring Boot devolver Status 400 ou 500)
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("muttley_token");
+      localStorage.removeItem("muttley_user");
+      
+      if (!window.location.pathname.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+
     let mensagemErro = "Erro inesperado na requisição.";
     try {
-        // Tenta ler o JSON de erro do Spring Boot (aquele nosso TratadorDeErros)
-        const errorData = await response.json();
-        mensagemErro = errorData; 
-    } catch {
-        // Se a API cair de vez e não devolver JSON, ignora e usa a genérica
-    }
+      const errorData = await response.json();
+      mensagemErro = errorData.mensagem || errorData.message || errorData.error || (typeof errorData === "string" ? errorData : JSON.stringify(errorData)); 
+    } catch {}
+    
     throw { status: response.status, data: mensagemErro };
   }
 
-  // Se for um DELETE (204 No Content), não tenta fazer o parse do JSON para não dar erro
-  if (response.status === 204) {
-    return null;
+  if (response.status === 204) return null;
+
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/pdf")) {
+      return response.blob();
   }
 
   return response.json();

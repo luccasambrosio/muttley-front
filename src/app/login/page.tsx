@@ -1,151 +1,162 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usuarioService } from "@/services/usuarioService";
-import Logo from "@/components/Logo";
+import { participanteService } from "@/services/participanteService";
+import { User, Shield, UserPlus } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   
-  // Controle de qual formulário está aparecendo
-  const [isLogin, setIsLogin] = useState(true);
+  const [modo, setModo] = useState<"ALUNO" | "GESTOR" | "CADASTRO" | "CADASTRO_ALUNO">("ALUNO");
   
-  // Estados dos campos
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   
-  // Estado para mensagens de erro ou sucesso
   const [mensagem, setMensagem] = useState({ texto: "", tipo: "" });
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  useEffect(() => {
+    if (sessionStorage.getItem("abrir_cadastro_aluno")) {
+      setModo("CADASTRO_ALUNO");
+      sessionStorage.removeItem("abrir_cadastro_aluno");
+    }
+  }, []);
+
+  const salvarSessao = (dados: any) => {
+    localStorage.setItem("muttley_token", dados.token);
+    localStorage.setItem("muttley_user", JSON.stringify({ nome: dados.nome, role: dados.role }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setMensagem({ texto: "", tipo: "" });
 
     try {
-      if (isLogin) {
-        // Fluxo de Login
-        const usuario = await usuarioService.login({ email, senha });
-        
-        // Como ainda não temos sessão/cookies configurados, 
-        // vamos apenas jogar um alert e ir para a home provisoriamente
-        alert(`Bem-vindo, ${usuario.nome}!`);
-        router.push("/"); 
-
-      } else {
-        // Fluxo de Cadastro (Sempre mandando como GESTOR)
-        await usuarioService.cadastrar({ 
-          nome, 
-          email, 
-          senha, 
-          perfil: "GESTOR" 
-        });
-        
-        setMensagem({ 
-          texto: "Cadastro realizado! Aguarde a aprovação do Admin.", 
-          tipo: "sucesso" 
-        });
-        
-        // Limpa os campos e volta para a tela de login
-        setIsLogin(true);
-        setSenha("");
+      if (modo === "ALUNO") {
+        const res = await usuarioService.loginAluno({ cpf, dataNascimento });
+        salvarSessao(res);
+        router.push("/eventos"); 
+      } 
+      else if (modo === "CADASTRO_ALUNO") {
+        // Agora usamos o service oficial que você já tinha criado!
+        await participanteService.criar({ nome, email, cpf, dataNascimento });
+        setMensagem({ texto: "Cadastro realizado com sucesso! Agora você pode fazer o login abaixo.", tipo: "sucesso" });
+        setModo("ALUNO");
+      }
+      else if (modo === "GESTOR") {
+        const res = await usuarioService.loginGerencial({ email, senha });
+        salvarSessao(res);
+        router.push("/eventos"); 
+      } 
+      else if (modo === "CADASTRO") {
+        await usuarioService.cadastrarGestor({ nome, email, senha });
+        setMensagem({ texto: "Cadastro realizado! Aguarde aprovação.", tipo: "sucesso" });
+        setModo("GESTOR");
       }
     } catch (error: any) {
-      setMensagem({ 
-        texto: error.message || "Erro ao processar a requisição.", 
-        tipo: "erro" 
-      });
+      setMensagem({ texto: error.data || "Erro ao conectar.", tipo: "erro" });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border">
         
-        <div className="flex flex-col items-center mb-8">
-          <Logo size="lg" isLink={false} />
-          <p className="text-gray-500 mt-2">
-            {isLogin ? "Faça login para acessar o sistema" : "Crie sua conta de Gestor"}
-          </p>
+        <div className="bg-blue-600 p-8 text-center">
+          <h1 className="text-3xl font-black text-white">Muttley</h1>
+          <p className="text-blue-100 mt-1">Plataforma de Eventos</p>
         </div>
 
-        {mensagem.texto && (
-          <div className={`p-3 rounded mb-4 text-sm font-medium ${
-            mensagem.tipo === "erro" ? "bg-red-50 text-red-700" : "bg-green-50 text-green-700"
-          }`}>
-            {mensagem.texto}
-          </div>
-        )}
+        <div className="flex border-b bg-gray-50">
+          <button type="button" onClick={() => { setModo("ALUNO"); setMensagem({texto:"", tipo:""}); }}
+            className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${modo === "ALUNO" || modo === "CADASTRO_ALUNO" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-gray-500 hover:text-gray-700"}`}>
+            <User className="w-4 h-4" /> Aluno
+          </button>
+          <button type="button" onClick={() => { setModo("GESTOR"); setMensagem({texto:"", tipo:""}); }}
+            className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${modo === "GESTOR" || modo === "CADASTRO" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-gray-500 hover:text-gray-700"}`}>
+            <Shield className="w-4 h-4" /> Gestor
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Campo Nome (Aparece só no cadastro) */}
-          {!isLogin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-              <input
-                type="text"
-                required={!isLogin}
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Ex: João Silva"
-              />
+        <div className="p-8">
+          {mensagem.texto && (
+            <div className={`p-3 rounded mb-5 text-sm font-bold ${mensagem.tipo === "erro" ? "bg-red-50 text-red-700 border-red-200" : "bg-green-50 text-green-700 border-green-200"}`}>
+              {mensagem.texto}
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              placeholder="seu@email.com"
-            />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {(modo === "ALUNO" || modo === "CADASTRO_ALUNO") && (
+              <>
+                {modo === "CADASTRO_ALUNO" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
+                      <input type="text" required value={nome} onChange={(e) => setNome(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
+                      <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">CPF</label>
+                  <input type="text" required value={cpf} onChange={(e) => setCpf(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" placeholder="111.111.111-11" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Data de Nascimento</label>
+                  <input type="date" required value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </>
+            )}
+
+            {(modo === "GESTOR" || modo === "CADASTRO") && (
+              <>
+                {modo === "CADASTRO" && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
+                    <input type="text" required value={nome} onChange={(e) => setNome(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Senha</label>
+                  <input type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} className="w-full p-3 border rounded outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </>
+            )}
+
+            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition">
+              {isLoading ? "Aguarde..." : (modo === "CADASTRO" || modo === "CADASTRO_ALUNO") ? "Finalizar Cadastro" : "Entrar no Sistema"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            {modo === "ALUNO" || modo === "CADASTRO_ALUNO" ? (
+              <button type="button" onClick={() => setModo(modo === "ALUNO" ? "CADASTRO_ALUNO" : "ALUNO")} className="text-sm font-bold text-blue-600 hover:underline">
+                {modo === "ALUNO" ? "Novo aluno? Cadastre-se aqui" : "Já tenho conta. Fazer login"}
+              </button>
+            ) : (
+              <button type="button" onClick={() => setModo(modo === "GESTOR" ? "CADASTRO" : "GESTOR")} className="text-sm font-bold text-blue-600 hover:underline">
+                {modo === "GESTOR" ? "Novo professor? Solicite acesso" : "Já tenho conta. Fazer Login"}
+              </button>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-            <input
-              type="password"
-              required
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400"
-          >
-            {isLoading ? "Aguarde..." : (isLogin ? "Entrar no Sistema" : "Solicitar Acesso")}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setMensagem({ texto: "", tipo: "" }); // Limpa as mensagens ao trocar
-            }}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-          >
-            {isLogin 
-              ? "Não tem uma conta? Cadastre-se" 
-              : "Já tem uma conta? Faça login"}
-          </button>
         </div>
-
       </div>
     </div>
   );

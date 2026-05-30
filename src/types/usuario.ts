@@ -10,7 +10,7 @@ export interface UsuarioCadastroData {
   nome: string;
   email: string;
   senha: string;
-  perfil: string; // "ADMIN" ou "GESTOR"
+  tipo: string; // "ADMIN" ou "GESTOR"
 }
 
 export interface UsuarioLoginData {

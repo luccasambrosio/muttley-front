@@ -1,16 +1,22 @@
 import { apiFetch } from "./api";
-import { Usuario, UsuarioCadastroData, UsuarioLoginData } from "@/types/usuario";
 
 export const usuarioService = {
-  login: (dados: UsuarioLoginData): Promise<Usuario> => {
-    return apiFetch("/usuarios/login", {
+  loginGerencial: (dados: any): Promise<any> => {
+    return apiFetch("/auth/login/gerencial", {
       method: "POST",
       body: JSON.stringify(dados),
     });
   },
 
-  cadastrar: (dados: UsuarioCadastroData): Promise<Usuario> => {
-    return apiFetch("/usuarios/cadastro", {
+  loginAluno: (dados: any): Promise<any> => {
+    return apiFetch("/auth/login/aluno", {
+      method: "POST",
+      body: JSON.stringify(dados),
+    });
+  },
+
+  cadastrarGestor: (dados: any): Promise<any> => {
+    return apiFetch("/auth/cadastro/gestor", {
       method: "POST",
       body: JSON.stringify(dados),
     });
