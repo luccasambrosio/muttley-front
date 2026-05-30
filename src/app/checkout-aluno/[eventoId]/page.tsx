@@ -6,12 +6,16 @@ import Header from "@/components/Header";
 import { inscricaoService } from "@/services/inscricaoService";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
+// No Next 15, params é uma Promise
 interface PageProps { params: Promise<{ eventoId: string }> }
 
 export default function AlunoCheckoutPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { eventoId } = use(params);
+  
+  // Desempacota a Promise corretamente
+  const resolvedParams = use(params);
+  const eventoId = resolvedParams.eventoId; 
   
   const token = searchParams.get("token");
 
@@ -20,30 +24,25 @@ export default function AlunoCheckoutPage({ params }: PageProps) {
 
   useEffect(() => {
     async function processarCheckout() {
-      // Verifica se há token na URL
       if (!token) {
         setStatus("ERRO");
         setMensagem("QR Code inválido. Token ausente.");
         return;
       }
 
-      // Verifica se o aluno está logado
       const muttleyToken = localStorage.getItem("muttley_token");
       const userStr = localStorage.getItem("muttley_user");
 
       if (!muttleyToken || !userStr || JSON.parse(userStr).role !== "ALUNO") {
-        // Se deslogado, guarda a URL atual para ele voltar depois do login
         sessionStorage.setItem("redirect_after_login", window.location.pathname + window.location.search);
         router.push("/login");
         return;
       }
 
-      // Se logado, extrai o CPF de dentro do JWT (O 'sub' no Spring Boot é o CPF do Aluno)
       try {
         const payload = JSON.parse(atob(muttleyToken.split('.')[1]));
         const cpf = payload.sub; 
 
-        // Dispara o Check-out no Java
         await inscricaoService.checkOut(Number(eventoId), cpf, token);
         
         setStatus("SUCESSO");

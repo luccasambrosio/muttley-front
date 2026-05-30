@@ -38,7 +38,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center mb-8 gap-3">
           <ShieldCheck className="w-8 h-8 text-red-600" />

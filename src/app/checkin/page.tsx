@@ -99,7 +99,6 @@ export default function CheckInPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="max-w-2xl mx-auto px-4 py-8">
         
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">

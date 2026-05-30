@@ -84,8 +84,15 @@ export default function Header() {
                 <Link href="/checkin" className={`px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${pathname === "/checkin" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 hover:text-gray-900"}`}>
                   <ScanLine className="w-4 h-4" /> Leitor Check-in
                 </Link>
+                {usuario?.role === "ADMIN" && (
+                  <Link href="/admin" className={`px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${pathname === "/admin" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 hover:text-gray-900"}`}>
+                    <Shield className="w-4 h-4" /> Gestores
+                  </Link>
+                )}
               </nav>
             )}
+
+            
 
 
             {usuario?.role === "ALUNO" && (
