@@ -33,10 +33,13 @@ export async function apiFetch(endpoint: string, options?: RequestInit) {
 
   if (response.status === 204) return null;
 
+  const text = await response.text();
+  if (!text) return null; 
+
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/pdf")) {
       return response.blob();
   }
 
-  return response.json();
+  return JSON.parse(text);
 }
