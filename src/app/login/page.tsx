@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usuarioService } from "@/services/usuarioService";
 import { participanteService } from "@/services/participanteService";
-import { User, Shield, UserPlus } from "lucide-react";
+import { User, Shield } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -50,6 +50,16 @@ export default function LoginPage() {
         } else {
           router.push("/eventos"); 
         }
+      }
+      else if (modo === "CADASTRO_ALUNO") {
+        await participanteService.criar({ nome, email, cpf, dataNascimento });
+        setMensagem({ texto: "Cadastro realizado com sucesso! Faça o login abaixo.", tipo: "sucesso" });
+        setModo("ALUNO");
+      }
+      else if (modo === "GESTOR") {
+        const res = await usuarioService.loginGerencial({ email, senha });
+        salvarSessao(res);
+        router.push("/eventos"); 
       }
       else if (modo === "CADASTRO") {
         await usuarioService.cadastrarGestor({ nome, email, senha });

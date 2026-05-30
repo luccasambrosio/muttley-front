@@ -29,5 +29,5 @@ export const participanteService = {
     return apiFetch(`/participantes/${id}`, {
       method: "DELETE",
     });
-  }
+  },
 };

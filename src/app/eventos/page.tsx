@@ -8,19 +8,23 @@ import EventoForm from "@/components/EventoForm";
 import { eventoService } from "@/services/eventoService";
 import { inscricaoService } from "@/services/inscricaoService";
 import { usuarioService } from "@/services/usuarioService";
-import { PlusCircle, Calendar, Edit, Trash2, Ticket, Users, QrCode } from "lucide-react";
+import { PlusCircle, Calendar, Edit, Trash2, Ticket, Users, QrCode, CheckCircle, Smartphone, Download } from "lucide-react";
 
 export default function EventosPage() {
   const router = useRouter();
   const [eventos, setEventos] = useState<any[]>([]);
-  const [usuario, setUsuario] = useState<{ id: number; role: string } | null>(null);
+  const [usuario, setUsuario] = useState<{ id: number; role: string; cpf?: string } | null>(null);
   
-  const [inscricoes, setInscricoes] = useState<number[]>([]);
+  // Agora guardamos o objeto completo da Inscrição (para ler o STATUS)
+  const [inscricoesMap, setInscricoesMap] = useState<Record<number, any>>({});
   const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [eventoEditando, setEventoEditando] = useState<any | null>(null);
+
+  const [isIngressoModalOpen, setIsIngressoModalOpen] = useState(false);
+  const [eventoDoIngresso, setEventoDoIngresso] = useState<any | null>(null);
 
   const [isInscricaoModalOpen, setIsInscricaoModalOpen] = useState(false);
   const [eventoSelecionado, setEventoSelecionado] = useState<number | null>(null);
@@ -35,7 +39,7 @@ export default function EventosPage() {
       try {
         const parsedUser = JSON.parse(userStr);
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUsuario({ id: payload.id, role: parsedUser.role });
+        setUsuario({ id: payload.id, role: parsedUser.role, cpf: payload.sub });
       } catch (e) {
         setUsuario(null);
       }
@@ -56,7 +60,7 @@ export default function EventosPage() {
     if (usuario?.role === "ALUNO") {
       carregarInscricoes(usuario.id);
     } else {
-      setInscricoes([]);
+      setInscricoesMap({});
     }
   }, [usuario]);
 
@@ -74,8 +78,12 @@ export default function EventosPage() {
   const carregarInscricoes = async (participanteId: number) => {
     try {
       const dados = await inscricaoService.listarPorParticipante(participanteId);
-      const ids = dados.map((insc: any) => insc.evento?.id || insc.eventoId);
-      setInscricoes(ids);
+      const map: Record<number, any> = {};
+      dados.forEach((insc: any) => {
+        const evId = insc.evento?.id || insc.eventoId;
+        map[evId] = insc; // Salva toda a inscrição (id, status, etc) na chave do Evento
+      });
+      setInscricoesMap(map);
     } catch (e) {
       console.error(e);
     }
@@ -89,7 +97,7 @@ export default function EventosPage() {
         await carregarInscricoes(usuario.id); 
         await carregarEventos();
       } catch (error: any) {
-        alert(error.data || "Erro ao processar inscrição automática.");
+        alert(error.data || "Erro ao processar inscrição.");
       } finally {
         setLoadingEventId(null); 
       }
@@ -118,6 +126,17 @@ export default function EventosPage() {
     }
   };
 
+  const handleBaixarCertificado = async (inscricaoId: number, eventoId: number) => {
+    setLoadingEventId(eventoId);
+    try {
+      await inscricaoService.baixarCertificado(inscricaoId);
+    } catch (error: any) {
+      alert("Erro ao baixar o certificado.");
+    } finally {
+      setLoadingEventId(null);
+    }
+  };
+
   const confirmarInscricaoDeslogado = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventoSelecionado) return;
@@ -132,7 +151,7 @@ export default function EventosPage() {
       const payload = JSON.parse(atob(tokenSilencioso.split('.')[1]));
       participanteId = payload.id;
     } catch (error: any) {
-      if (confirm("Seus dados de aluno não foram encontrados ou estão incorretos. Deseja realizar seu cadastro completo de Participante?")) {
+      if (confirm("Seus dados de aluno não foram encontrados. Deseja realizar seu cadastro completo de Participante?")) {
         sessionStorage.setItem("abrir_cadastro_aluno", "true");
         router.push("/login");
       }
@@ -142,7 +161,7 @@ export default function EventosPage() {
 
     try {
       await inscricaoService.inscrever({ participanteId, eventoId: eventoSelecionado }, tokenSilencioso);
-      alert("Inscrição realizada com sucesso! Verifique seu e-mail.");
+      alert("Inscrição confirmada! Seu comprovante foi enviado por e-mail.");
       setIsInscricaoModalOpen(false);
       await carregarEventos();
     } catch (error: any) {
@@ -150,6 +169,11 @@ export default function EventosPage() {
     } finally {
       setLoadingEventId(null);
     }
+  };
+
+  const abrirIngresso = (evento: any) => {
+    setEventoDoIngresso(evento);
+    setIsIngressoModalOpen(true);
   };
 
   return (
@@ -177,7 +201,8 @@ export default function EventosPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {eventos.map((evento) => {
-              const isInscrito = inscricoes.includes(evento.id);
+              const inscricao = inscricoesMap[evento.id];
+              const isInscrito = !!inscricao;
               const isThisLoading = loadingEventId === evento.id;
 
               return (
@@ -194,11 +219,24 @@ export default function EventosPage() {
                       )}
                     </div>
                     
+                    {/* LABELS INTELIGENTES DE STATUS DA INSCRIÇÃO */}
                     {isInscrito && (
-                      <div className="mb-3">
-                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-bold border border-green-200">
-                          <span>✓ Inscrito</span>
-                        </span>
+                      <div className="mb-3 flex flex-col gap-1 items-start">
+                        {inscricao.status === "CONCLUIDO" && (
+                          <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 text-xs px-2.5 py-1 rounded-full font-bold border border-purple-200">
+                            <CheckCircle className="w-3 h-3" /> Certificado Disponível
+                          </span>
+                        )}
+                        {inscricao.status === "CHECK_IN_REALIZADO" && (
+                          <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold border border-blue-200">
+                            <CheckCircle className="w-3 h-3" /> Check-in Realizado
+                          </span>
+                        )}
+                        {inscricao.status === "INSCRITO" && (
+                          <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-bold border border-green-200">
+                            <CheckCircle className="w-3 h-3" /> Inscrito
+                          </span>
+                        )}
                       </div>
                     )}
 
@@ -207,27 +245,15 @@ export default function EventosPage() {
                       {evento.dataInicio.split("-").reverse().join("/")} às {evento.horaInicio}
                     </div>
                     <p className="text-gray-600 text-sm line-clamp-2 mb-4">{evento.descricao}</p>
-                    
-                    <div className="mt-2">
-                      <div className="flex flex-wrap gap-1">
-                        {evento.apresentadores?.map((ap: any) => (
-                          <span key={ap.id} className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                            {ap.nome}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
                   </div>
                   
                   <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
                     {usuario?.role === "ADMIN" || usuario?.role === "GESTOR" ? (
                       <div className="flex justify-between items-center w-full">
-                        {/* ---> ÍCONE DE CHECKOUT COM INTELIGÊNCIA LOGICA <--- */}
                         {evento.requerCheckout ? (
                           <button 
                             onClick={() => router.push(`/eventos/${evento.id}/checkout`)}
                             className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg border border-purple-100 flex items-center gap-1 text-xs font-bold transition-colors"
-                            title="Abrir tela de liberação de Check-out por QR Code"
                           >
                             <QrCode className="w-4 h-4" /> Check-out
                           </button>
@@ -246,13 +272,32 @@ export default function EventosPage() {
                       </div>
                     ) : (
                       isInscrito ? (
-                        <button 
-                          onClick={() => handleCancelarInscricao(evento.id)} 
-                          disabled={isThisLoading}
-                          className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 border border-red-200 transition-colors disabled:opacity-50"
-                        >
-                          {isThisLoading ? "Cancelando..." : "Cancelar Inscrição"}
-                        </button>
+                        inscricao.status === "CONCLUIDO" ? (
+                          <button 
+                            onClick={() => handleBaixarCertificado(inscricao.id, evento.id)} 
+                            disabled={isThisLoading}
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 transition-colors disabled:opacity-50"
+                          >
+                            <Download className="w-4 h-4" /> {isThisLoading ? "Baixando..." : "Baixar Certificado"}
+                          </button>
+                        ) : (
+                          <div className="flex w-full gap-2">
+                            <button 
+                              onClick={() => abrirIngresso(evento)} 
+                              disabled={isThisLoading}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg flex justify-center items-center gap-1 transition-colors disabled:opacity-50"
+                            >
+                              <QrCode className="w-4 h-4" /> Ingresso
+                            </button>
+                            <button 
+                              onClick={() => handleCancelarInscricao(evento.id)} 
+                              disabled={isThisLoading}
+                              className="flex-1 bg-white hover:bg-red-50 text-red-600 font-bold py-2 px-3 rounded-lg flex justify-center items-center gap-1 border border-red-200 transition-colors disabled:opacity-50"
+                            >
+                              {isThisLoading ? "..." : "Cancelar"}
+                            </button>
+                          </div>
+                        )
                       ) : (
                         <button 
                           onClick={() => handleParticiparClick(evento.id)} 
@@ -289,6 +334,33 @@ export default function EventosPage() {
               {loadingEventId !== null ? "Processando..." : "Gerar Ingresso"}
             </button>
           </form>
+        </Modal>
+
+        {/* ---> O INGRESSO DO ALUNO (GERA O JSON COM CPF E EVENTO) <--- */}
+        <Modal isOpen={isIngressoModalOpen} onClose={() => setIsIngressoModalOpen(false)} title="Seu Ingresso (Check-in)">
+          <div className="text-center p-4">
+            <h3 className="font-bold text-xl text-gray-900 mb-1">{eventoDoIngresso?.titulo}</h3>
+            <p className="text-sm text-gray-500 mb-6 flex items-center justify-center gap-1">
+              <Smartphone className="w-4 h-4" /> Apresente a tela na portaria do evento
+            </p>
+            
+            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-inner inline-block mb-4">
+              {usuario?.cpf && eventoDoIngresso?.id ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(JSON.stringify({ cpf: usuario.cpf, eventoId: eventoDoIngresso.id }))}`} 
+                  alt="QR Code do Ingresso" 
+                  className="w-48 h-48 select-none"
+                />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center text-gray-400">Dados incompletos</div>
+              )}
+            </div>
+            
+            <p className="text-xs font-bold font-mono text-gray-400 uppercase tracking-widest">
+              Identificação: {usuario?.cpf}
+            </p>
+          </div>
         </Modal>
 
       </main>

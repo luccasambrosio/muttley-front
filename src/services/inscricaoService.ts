@@ -21,5 +21,16 @@ export const inscricaoService = {
 
   checkOut: (eventoId: number, cpf: string, token: string): Promise<any> => {
     return apiFetch(`/inscricoes/checkout/${eventoId}/cpf/${cpf}?token=${token}`, { method: "PATCH" });
+  },
+
+  baixarCertificado: async (inscricaoId: number): Promise<void> => {
+    const blob = await apiFetch(`/inscricoes/${inscricaoId}/certificado`);
+    const url = window.URL.createObjectURL(blob as Blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Certificado_Muttley_${inscricaoId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
 };

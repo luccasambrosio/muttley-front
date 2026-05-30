@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, LogIn, Shield, GraduationCap, User, Calendar, Users, Award, ScanLine } from "lucide-react";
+import { LogOut, LogIn, Shield, GraduationCap, User, Calendar, Users, Award, ScanLine, Trophy } from "lucide-react";
 
 export default function Header() {
   const router = useRouter();
@@ -83,6 +83,18 @@ export default function Header() {
                 )}
                 <Link href="/checkin" className={`px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${pathname === "/checkin" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 hover:text-gray-900"}`}>
                   <ScanLine className="w-4 h-4" /> Leitor Check-in
+                </Link>
+              </nav>
+            )}
+
+
+            {usuario?.role === "ALUNO" && (
+              <nav className="hidden md:flex items-center gap-1 text-sm font-bold text-gray-600">
+                <Link href="/eventos" className={`px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${pathname === "/eventos" ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 hover:text-gray-900"}`}>
+                  <Calendar className="w-4 h-4" /> Eventos
+                </Link>
+                <Link href="/conquistas" className={`px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors ${pathname === "/conquistas" ? "bg-purple-50 text-purple-600" : "hover:bg-gray-50 hover:text-gray-900"}`}>
+                  <Trophy className="w-4 h-4" /> Conquistas
                 </Link>
               </nav>
             )}
