@@ -8,12 +8,15 @@ import EventoForm from "@/components/EventoForm";
 import { eventoService } from "@/services/eventoService";
 import { inscricaoService } from "@/services/inscricaoService";
 import { usuarioService } from "@/services/usuarioService";
-import { PlusCircle, Calendar, Edit, Trash2, Ticket } from "lucide-react";
+import { PlusCircle, Calendar, Edit, Trash2, Ticket, Users, QrCode } from "lucide-react";
 
 export default function EventosPage() {
   const router = useRouter();
   const [eventos, setEventos] = useState<any[]>([]);
   const [usuario, setUsuario] = useState<{ id: number; role: string } | null>(null);
+  
+  const [inscricoes, setInscricoes] = useState<number[]>([]);
+  const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,7 +27,7 @@ export default function EventosPage() {
   const [cpf, setCpf] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
 
-  useEffect(() => {
+  const verificarSessao = () => {
     const token = localStorage.getItem("muttley_token");
     const userStr = localStorage.getItem("muttley_user");
     
@@ -34,11 +37,28 @@ export default function EventosPage() {
         const payload = JSON.parse(atob(token.split('.')[1]));
         setUsuario({ id: payload.id, role: parsedUser.role });
       } catch (e) {
-        console.error(e);
+        setUsuario(null);
       }
+    } else {
+      setUsuario(null);
     }
+  };
+
+  useEffect(() => {
+    verificarSessao();
     carregarEventos();
+
+    window.addEventListener("muttley-auth", verificarSessao);
+    return () => window.removeEventListener("muttley-auth", verificarSessao);
   }, []);
+
+  useEffect(() => {
+    if (usuario?.role === "ALUNO") {
+      carregarInscricoes(usuario.id);
+    } else {
+      setInscricoes([]);
+    }
+  }, [usuario]);
 
   const carregarEventos = async () => {
     try {
@@ -51,16 +71,29 @@ export default function EventosPage() {
     }
   };
 
+  const carregarInscricoes = async (participanteId: number) => {
+    try {
+      const dados = await inscricaoService.listarPorParticipante(participanteId);
+      const ids = dados.map((insc: any) => insc.evento?.id || insc.eventoId);
+      setInscricoes(ids);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleParticiparClick = async (eventoId: number) => {
     if (usuario && usuario.role === "ALUNO") {
+      setLoadingEventId(eventoId); 
       try {
         await inscricaoService.inscrever({ participanteId: usuario.id, eventoId });
-        alert("Inscrição realizada com sucesso! Verifique seu e-mail.");
-        return;
+        await carregarInscricoes(usuario.id); 
+        await carregarEventos();
       } catch (error: any) {
         alert(error.data || "Erro ao processar inscrição automática.");
-        return;
+      } finally {
+        setLoadingEventId(null); 
       }
+      return;
     }
     
     setEventoSelecionado(eventoId);
@@ -69,30 +102,53 @@ export default function EventosPage() {
     setIsInscricaoModalOpen(true);
   };
 
+  const handleCancelarInscricao = async (eventoId: number) => {
+    if (!usuario) return;
+    if (confirm("Deseja realmente cancelar sua inscrição neste evento?")) {
+      setLoadingEventId(eventoId); 
+      try {
+        await inscricaoService.cancelar(eventoId, usuario.id);
+        await carregarInscricoes(usuario.id); 
+        await carregarEventos();
+      } catch (error: any) {
+        alert(error.data || "Erro ao cancelar inscrição.");
+      } finally {
+        setLoadingEventId(null);
+      }
+    }
+  };
+
   const confirmarInscricaoDeslogado = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!eventoSelecionado) return;
 
+    setLoadingEventId(eventoSelecionado);
+    let tokenSilencioso = "";
+    let participanteId = 0;
+
     try {
       const res = await usuarioService.loginAluno({ cpf, dataNascimento });
-      
-      localStorage.setItem("muttley_token", res.token);
-      localStorage.setItem("muttley_user", JSON.stringify({ nome: res.nome, role: res.role }));
-
-      const payload = JSON.parse(atob(res.token.split('.')[1]));
-      
-      await inscricaoService.inscrever({ participanteId: payload.id, eventoId: eventoSelecionado });
-      
-      setUsuario({ id: payload.id, role: res.role });
-      
-      alert("Inscrição realizada com sucesso! Verifique seu e-mail.");
-      setIsInscricaoModalOpen(false);
-
+      tokenSilencioso = res.token;
+      const payload = JSON.parse(atob(tokenSilencioso.split('.')[1]));
+      participanteId = payload.id;
     } catch (error: any) {
-      if (confirm("Seus dados de aluno não foram encontrados. Deseja realizar seu cadastro completo de Participante?")) {
+      if (confirm("Seus dados de aluno não foram encontrados ou estão incorretos. Deseja realizar seu cadastro completo de Participante?")) {
         sessionStorage.setItem("abrir_cadastro_aluno", "true");
         router.push("/login");
       }
+      setLoadingEventId(null);
+      return;
+    }
+
+    try {
+      await inscricaoService.inscrever({ participanteId, eventoId: eventoSelecionado }, tokenSilencioso);
+      alert("Inscrição realizada com sucesso! Verifique seu e-mail.");
+      setIsInscricaoModalOpen(false);
+      await carregarEventos();
+    } catch (error: any) {
+      alert(error.data || "Erro ao realizar inscrição.");
+    } finally {
+      setLoadingEventId(null);
     }
   };
 
@@ -109,8 +165,7 @@ export default function EventosPage() {
           
           {(usuario?.role === "ADMIN" || usuario?.role === "GESTOR") && (
             <button onClick={() => { setEventoEditando(null); setIsModalOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-lg flex items-center shadow-sm">
-              <PlusCircle className="w-5 h-5 mr-2" />
-              Novo Evento
+              <PlusCircle className="w-5 h-5 mr-2" /> Novo Evento
             </button>
           )}
         </div>
@@ -121,54 +176,105 @@ export default function EventosPage() {
           <p className="text-center text-gray-500 bg-white p-8 rounded-xl border">Nenhum evento disponível no momento.</p>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {eventos.map((evento) => (
-              <div key={evento.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                <div className="p-6 flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2 truncate">{evento.titulo}</h3>
-                  <div className="flex items-center text-sm text-gray-600 mb-2 bg-gray-50 w-max px-2 py-1 rounded">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    {evento.dataInicio.split("-").reverse().join("/")} às {evento.horaInicio}
-                  </div>
-                  <p className="text-gray-600 text-sm line-clamp-2 mb-4">{evento.descricao}</p>
-                  
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-1">
-                      {evento.apresentadores?.map((ap: any) => (
-                        <span key={ap.id} className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
-                          {ap.nome}
+            {eventos.map((evento) => {
+              const isInscrito = inscricoes.includes(evento.id);
+              const isThisLoading = loadingEventId === evento.id;
+
+              return (
+                <div key={evento.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                  <div className="p-6 flex-1">
+                    <div className="flex justify-between items-start gap-2 mb-2">
+                      <h3 className="text-xl font-bold text-gray-900 truncate" title={evento.titulo}>{evento.titulo}</h3>
+                      
+                      {(usuario?.role === "ADMIN" || usuario?.role === "GESTOR") && (
+                        <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full border border-blue-100 shrink-0">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>{evento.totalInscritos ?? 0}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {isInscrito && (
+                      <div className="mb-3">
+                        <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs px-2.5 py-1 rounded-full font-bold border border-green-200">
+                          <span>✓ Inscrito</span>
                         </span>
-                      ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center text-sm text-gray-600 mb-2 bg-gray-50 w-max px-2 py-1 rounded">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {evento.dataInicio.split("-").reverse().join("/")} às {evento.horaInicio}
+                    </div>
+                    <p className="text-gray-600 text-sm line-clamp-2 mb-4">{evento.descricao}</p>
+                    
+                    <div className="mt-2">
+                      <div className="flex flex-wrap gap-1">
+                        {evento.apresentadores?.map((ap: any) => (
+                          <span key={ap.id} className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                            {ap.nome}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  
+                  <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+                    {usuario?.role === "ADMIN" || usuario?.role === "GESTOR" ? (
+                      <div className="flex justify-between items-center w-full">
+                        {/* ---> ÍCONE DE CHECKOUT COM INTELIGÊNCIA LOGICA <--- */}
+                        {evento.requerCheckout ? (
+                          <button 
+                            onClick={() => router.push(`/eventos/${evento.id}/checkout`)}
+                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg border border-purple-100 flex items-center gap-1 text-xs font-bold transition-colors"
+                            title="Abrir tela de liberação de Check-out por QR Code"
+                          >
+                            <QrCode className="w-4 h-4" /> Check-out
+                          </button>
+                        ) : (
+                          <div className="text-xs text-gray-400 italic">Sem checkout</div>
+                        )}
+
+                        <div className="flex space-x-2">
+                          <button onClick={() => { setEventoEditando(evento); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          <button onClick={async () => { if(confirm("Excluir evento?")) { await eventoService.excluir(evento.id); carregarEventos(); } }} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      isInscrito ? (
+                        <button 
+                          onClick={() => handleCancelarInscricao(evento.id)} 
+                          disabled={isThisLoading}
+                          className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 border border-red-200 transition-colors disabled:opacity-50"
+                        >
+                          {isThisLoading ? "Cancelando..." : "Cancelar Inscrição"}
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleParticiparClick(evento.id)} 
+                          disabled={isThisLoading}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          <Ticket className="w-4 h-4" /> {isThisLoading ? "Aguarde..." : "Participar"}
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
-                
-                <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
-                  {usuario?.role === "ADMIN" || usuario?.role === "GESTOR" ? (
-                    <div className="flex justify-end w-full space-x-2">
-                      <button onClick={() => { setEventoEditando(evento); setIsModalOpen(true); }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button onClick={async () => { if(confirm("Excluir evento?")) { await eventoService.excluir(evento.id); carregarEventos(); } }} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => handleParticiparClick(evento.id)} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex justify-center items-center gap-2">
-                      <Ticket className="w-4 h-4" />
-                      Participar
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} titulo={eventoEditando ? "Editar Evento" : "Criar Evento"}>
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={eventoEditando ? "Editar Evento" : "Criar Evento"}>
           <EventoForm initialData={eventoEditando} onSubmit={async (d) => { eventoEditando ? await eventoService.atualizar(eventoEditando.id, d) : await eventoService.criar(d); setIsModalOpen(false); carregarEventos(); }} onCancel={() => setIsModalOpen(false)} isLoading={false} />
         </Modal>
 
-        <Modal isOpen={isInscricaoModalOpen} onClose={() => setIsInscricaoModalOpen(false)} titulo="Confirmar Inscrição">
+        <Modal isOpen={isInscricaoModalOpen} onClose={() => setIsInscricaoModalOpen(false)} title="Confirmar Inscrição">
           <form onSubmit={confirmarInscricaoDeslogado} className="space-y-4">
             <p className="text-sm text-gray-600 mb-4">Insira seu CPF e Data de Nascimento para emitir o ingresso.</p>
             <div>
@@ -179,8 +285,8 @@ export default function EventosPage() {
               <label className="block text-sm font-bold text-gray-700 mb-1">Data de Nascimento</label>
               <input type="date" required value={dataNascimento} onChange={e => setDataNascimento(e.target.value)} className="w-full p-2 border rounded" />
             </div>
-            <button type="submit" className="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 mt-2">
-              Gerar Ingresso
+            <button type="submit" disabled={loadingEventId !== null} className="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 mt-2 disabled:bg-green-400">
+              {loadingEventId !== null ? "Processando..." : "Gerar Ingresso"}
             </button>
           </form>
         </Modal>

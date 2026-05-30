@@ -30,6 +30,7 @@ export default function LoginPage() {
   const salvarSessao = (dados: any) => {
     localStorage.setItem("muttley_token", dados.token);
     localStorage.setItem("muttley_user", JSON.stringify({ nome: dados.nome, role: dados.role }));
+    window.dispatchEvent(new Event("muttley-auth"));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,19 +42,15 @@ export default function LoginPage() {
       if (modo === "ALUNO") {
         const res = await usuarioService.loginAluno({ cpf, dataNascimento });
         salvarSessao(res);
-        router.push("/eventos"); 
-      } 
-      else if (modo === "CADASTRO_ALUNO") {
-        // Agora usamos o service oficial que você já tinha criado!
-        await participanteService.criar({ nome, email, cpf, dataNascimento });
-        setMensagem({ texto: "Cadastro realizado com sucesso! Agora você pode fazer o login abaixo.", tipo: "sucesso" });
-        setModo("ALUNO");
+        
+        const urlPendente = sessionStorage.getItem("redirect_after_login");
+        if (urlPendente) {
+          sessionStorage.removeItem("redirect_after_login");
+          router.push(urlPendente);
+        } else {
+          router.push("/eventos"); 
+        }
       }
-      else if (modo === "GESTOR") {
-        const res = await usuarioService.loginGerencial({ email, senha });
-        salvarSessao(res);
-        router.push("/eventos"); 
-      } 
       else if (modo === "CADASTRO") {
         await usuarioService.cadastrarGestor({ nome, email, senha });
         setMensagem({ texto: "Cadastro realizado! Aguarde aprovação.", tipo: "sucesso" });
@@ -78,7 +75,7 @@ export default function LoginPage() {
         <div className="flex border-b bg-gray-50">
           <button type="button" onClick={() => { setModo("ALUNO"); setMensagem({texto:"", tipo:""}); }}
             className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${modo === "ALUNO" || modo === "CADASTRO_ALUNO" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-gray-500 hover:text-gray-700"}`}>
-            <User className="w-4 h-4" /> Aluno
+            <User className="w-4 h-4" /> Participante
           </button>
           <button type="button" onClick={() => { setModo("GESTOR"); setMensagem({texto:"", tipo:""}); }}
             className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${modo === "GESTOR" || modo === "CADASTRO" ? "text-blue-600 border-b-2 border-blue-600 bg-white" : "text-gray-500 hover:text-gray-700"}`}>
@@ -147,7 +144,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             {modo === "ALUNO" || modo === "CADASTRO_ALUNO" ? (
               <button type="button" onClick={() => setModo(modo === "ALUNO" ? "CADASTRO_ALUNO" : "ALUNO")} className="text-sm font-bold text-blue-600 hover:underline">
-                {modo === "ALUNO" ? "Novo aluno? Cadastre-se aqui" : "Já tenho conta. Fazer login"}
+                {modo === "ALUNO" ? "Novo participante? Cadastre-se aqui" : "Já tenho conta. Fazer login"}
               </button>
             ) : (
               <button type="button" onClick={() => setModo(modo === "GESTOR" ? "CADASTRO" : "GESTOR")} className="text-sm font-bold text-blue-600 hover:underline">

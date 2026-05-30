@@ -137,7 +137,7 @@ export default function apresentadoresPage() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        titulo={apresentadorSelecionado ? "Editar apresentador" : "Novo apresentador"}
+        title={apresentadorSelecionado ? "Editar apresentador" : "Novo apresentador"}
       >
         <ApresentadorForm 
           dadosIniciais={apresentadorSelecionado} 

@@ -3,11 +3,11 @@
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  titulo: string;
+  title: string;
   children: React.ReactNode;
 }
 
-export default function Modal({ isOpen, onClose, titulo, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -21,7 +21,7 @@ export default function Modal({ isOpen, onClose, titulo, children }: ModalProps)
       {/* Conteúdo do Modal */}
       <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto z-10">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-800">{titulo}</h2>
+          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl"
