@@ -81,7 +81,6 @@ export default function CheckoutQRCodePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="max-w-md mx-auto px-4 py-12">
         <button onClick={() => router.push("/eventos")} className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-gray-900 mb-6 bg-white px-3 py-1.5 rounded-lg border shadow-sm transition-colors">
           <ArrowLeft className="w-4 h-4" /> Voltar para Eventos

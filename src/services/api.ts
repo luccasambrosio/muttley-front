@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.81:8083";
 
 export async function apiFetch(endpoint: string, options?: RequestInit) {
   const token = typeof window !== "undefined" ? localStorage.getItem("muttley_token") : null;
@@ -13,11 +13,20 @@ export async function apiFetch(endpoint: string, options?: RequestInit) {
   });
 
   if (!response.ok) {
+    // ---> NOVA LÓGICA DE DESLOGAR SILENCIOSAMENTE <---
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("muttley_token");
       localStorage.removeItem("muttley_user");
       
-      if (!window.location.pathname.includes("/login")) {
+      // Avisa os componentes (Header, Page) que o usuário caiu e deve virar Visitante
+      window.dispatchEvent(new Event("muttley-auth"));
+      
+      // Só redireciona à força se ele estiver numa rota estritamente privada
+      const publicRoutes = ["/eventos", "/login", "/"];
+      const currentPath = window.location.pathname;
+      const isPublic = publicRoutes.includes(currentPath) || currentPath.startsWith("/checkout-aluno");
+      
+      if (!isPublic) {
         window.location.href = "/login";
       }
     }
@@ -33,13 +42,16 @@ export async function apiFetch(endpoint: string, options?: RequestInit) {
 
   if (response.status === 204) return null;
 
-  const text = await response.text();
-  if (!text) return null; 
-
+  // ---> A ORDEM CERTA É ESSA AQUI <---
+  // 1. Verifica se o servidor mandou um PDF PRIMEIRO
   const contentType = response.headers.get("content-type");
   if (contentType && contentType.includes("application/pdf")) {
-      return response.blob();
+      return await response.blob(); // Se for PDF, extrai como arquivo (Blob) e encerra aqui.
   }
+
+  // 2. Se não for PDF, aí sim nós lemos como texto/JSON
+  const text = await response.text();
+  if (!text) return null; 
 
   return JSON.parse(text);
 }

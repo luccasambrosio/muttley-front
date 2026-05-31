@@ -130,7 +130,7 @@ export default function CheckInPage() {
             {modo === "CAMERA" && (
               <div className="flex flex-col items-center">
                 {/* A div 'reader' precisa sempre estar presente no DOM para a ref encontrá-la */}
-                <div id="reader" className="w-full max-w-sm rounded-xl overflow-hidden shadow-inner bg-black border-2 border-dashed border-gray-300 min-h-[300px]"></div>
+                <div id="reader" className="w-full max-w-sm rounded-xl overflow-hidden shadow-inner bg-black border-2 border-dashed border-gray-300 min-h-75"></div>
                 <p className="text-xs text-gray-500 mt-4 text-center max-w-xs font-bold">
                   Aponte a câmera para o QR Code do aluno. O Evento e o CPF serão selecionados automaticamente!
                 </p>

@@ -58,7 +58,6 @@ export default function AlunoCheckoutPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
       <main className="max-w-md mx-auto px-4 py-20 text-center">
         <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 flex flex-col items-center">
           

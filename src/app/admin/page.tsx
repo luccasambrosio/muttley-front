@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Header from "@/components/Header";
 import { adminService } from "@/services/adminService";
 import { ShieldCheck, CheckCircle, XCircle } from "lucide-react";
 
