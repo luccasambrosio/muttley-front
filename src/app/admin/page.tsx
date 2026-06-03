@@ -78,6 +78,18 @@ export default function AdminDashboard() {
         <span className="text-yellow-700 dark:text-yellow-400 font-bold">Pendente</span>
       ),
     },
+    {
+      label: "Assinatura",
+      value: g.assinaturaBase64 ? (
+        <img 
+            alt="Assinatura do gestor" 
+            className="max-h-24 object-contain bg-white border border-gray-300 dark:border-gray-600 rounded p-1" 
+            src={`data:image/png;base64,${g.assinaturaBase64.replace("data:image/png;base64,", "")}`} 
+          />
+      ) : (
+        <span className="text-gray-400 dark:text-gray-500 italic">Assinatura não cadastrada</span>
+      ),
+    },
   ];
 
   return (
