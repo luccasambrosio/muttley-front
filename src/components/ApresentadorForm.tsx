@@ -36,35 +36,35 @@ export default function ApresentadorForm({ dadosIniciais, aoEnviar, botaoTexto }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 shadow-md rounded-lg space-y-4 border border-gray-100">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-gray-700">Nome Completo</label>
+        <label className="field-label">Nome Completo</label>
         <input
           required
           type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
+          className="field-input"
           value={formData.nome}
           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700">Telefone</label>
+        <label className="field-label">Telefone</label>
         <input
           required
           type="text"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
+          className="field-input"
           value={formData.telefone}
           onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700">CPF</label>
+        <label className="field-label">CPF</label>
         <input
           required
-          type="cpf"
-          className="mt-1 w-full border border-gray-300 p-2 rounded-md focus:ring-2 focus:ring-muttley-action outline-none"
+          type="text"
+          className="field-input"
           value={formData.cpf}
           onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
         />

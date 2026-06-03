@@ -42,25 +42,25 @@ export default function ParticipanteForm({ dadosIniciais, aoEnviar, botaoTexto }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 shadow-sm rounded-lg space-y-4 border border-gray-100">
+    <form onSubmit={handleSubmit} className="space-y-4">
       
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
+        <label className="field-label">Nome Completo</label>
         <input
           required
           type="text"
-          className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+          className="field-input rounded-lg p-2.5"
           value={formData.nome}
           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-bold text-gray-700 mb-1">E-mail Institucional</label>
+        <label className="field-label">E-mail Institucional</label>
         <input
           required
           type="email"
-          className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+          className="field-input rounded-lg p-2.5"
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
         />
@@ -68,11 +68,11 @@ export default function ParticipanteForm({ dadosIniciais, aoEnviar, botaoTexto }
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">CPF</label>
+          <label className="field-label">CPF</label>
           <input
             required
             type="text"
-            className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="field-input rounded-lg p-2.5"
             placeholder="111.111.111-11"
             value={formData.cpf}
             onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
@@ -80,11 +80,11 @@ export default function ParticipanteForm({ dadosIniciais, aoEnviar, botaoTexto }
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1">Nascimento</label>
+          <label className="field-label">Nascimento</label>
           <input
             required
             type="date"
-            className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="field-input rounded-lg p-2.5"
             value={formData.dataNascimento}
             onChange={(e) => setFormData({ ...formData, dataNascimento: e.target.value })}
           />

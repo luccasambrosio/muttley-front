@@ -1,49 +1,67 @@
-// src/app/apresentadores/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apresentadorService } from "@/services/apresentadorService";
 import Modal from "@/components/Modal";
 import ApresentadorForm from "@/components/ApresentadorForm";
+import ListToolbar from "@/components/ListToolbar";
+import TableRowActions from "@/components/TableRowActions";
+import DetailModal, { DetailField } from "@/components/DetailModal";
 import { Apresentador, ApresentadorFormData } from "@/types/apresentador";
+import { muttleyAlert, muttleyConfirm } from "@/lib/dialog";
 
-export default function apresentadoresPage() {
-  // 1. Estados da Tela
+export default function ApresentadoresPage() {
   const [apresentadores, setApresentadores] = useState<Apresentador[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [busca, setBusca] = useState("");
+  const [ordenarAsc, setOrdenarAsc] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [apresentadorSelecionado, setApresentadoreselecionado] = useState<Apresentador | undefined>();
+  const [apresentadorSelecionado, setApresentadorSelecionado] = useState<Apresentador | undefined>();
+  const [detalheAberto, setDetalheAberto] = useState<Apresentador | null>(null);
 
-  // 2. Função que busca os dados usando nosso Service
   const carregarApresentadores = async () => {
     try {
       setIsLoading(true);
       const dados = await apresentadorService.listarTodos();
       setApresentadores(dados);
-      setErro(null); // Limpa erros se der sucesso
-    } catch (error) {
+      setErro(null);
+    } catch {
       setErro("Não foi possível carregar a lista de apresentadores.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 3. Executa a busca apenas 1 vez quando a tela abre
   useEffect(() => {
     carregarApresentadores();
   }, []);
 
-  // Abre modal para criação
+  const listaFiltrada = useMemo(() => {
+    let lista = [...apresentadores];
+    if (busca.trim()) {
+      const q = busca.toLowerCase();
+      lista = lista.filter(
+        (a) =>
+          a.nome.toLowerCase().includes(q) ||
+          a.telefone?.toLowerCase().includes(q) ||
+          a.cpf?.toLowerCase().includes(q)
+      );
+    }
+    lista.sort((a, b) =>
+      ordenarAsc ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome)
+    );
+    return lista;
+  }, [apresentadores, busca, ordenarAsc]);
+
   const handleNovo = () => {
-    setApresentadoreselecionado(undefined);
+    setApresentadorSelecionado(undefined);
     setIsModalOpen(true);
   };
 
-  // Abre modal para edição
   const handleEditar = (apresentador: Apresentador) => {
-    setApresentadoreselecionado(apresentador);
+    setApresentadorSelecionado(apresentador);
     setIsModalOpen(true);
   };
 
@@ -55,75 +73,93 @@ export default function apresentadoresPage() {
         await apresentadorService.criar(dados);
       }
       setIsModalOpen(false);
-      carregarApresentadores(); // Atualiza a lista após salvar
-    } catch (error) {
-      alert("Erro ao salvar dados.");
+      carregarApresentadores();
+    } catch {
+      await muttleyAlert("Erro ao salvar dados.");
     }
   };
 
-  // 4. Lida com a exclusão
   const handleExcluir = async (id: number, nome: string) => {
-    const confirmacao = window.confirm(`Tem certeza que deseja excluir o apresentador ${nome}?`);
-    
-    if (confirmacao) {
+    if (await muttleyConfirm(`Tem certeza que deseja excluir o apresentador ${nome}?`)) {
       try {
         await apresentadorService.excluir(id);
-        setApresentadores((listaAtual) => listaAtual.filter((apresentador) => apresentador.id !== id));
-      } catch (error) {
-        alert("Erro ao excluir apresentador. Verifique se o servidor está rodando.");
+        setApresentadores((lista) => lista.filter((a) => a.id !== id));
+      } catch {
+        await muttleyAlert("Erro ao excluir apresentador. Verifique se o servidor está rodando.");
       }
     }
   };
 
-  // 5. Renderização (Desenhando a tela)
+  const camposDetalhe = (a: Apresentador): DetailField[] => [
+    { label: "ID", value: a.id },
+    { label: "Nome", value: a.nome },
+    { label: "Telefone", value: a.telefone },
+    { label: "CPF", value: a.cpf },
+  ];
+
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      {/* Cabeçalho da página */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-muttley-dark">Gestão de Apresentadores</h1>
-        <button 
+    <div className="page-shell p-4 sm:p-8 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gestão de Apresentadores</h1>
+        <button
           onClick={handleNovo}
-          className="bg-muttley-action text-white px-5 py-2.5 rounded-md font-semibold hover:bg-muttley-dark"
+          className="bg-blue-600 text-white px-5 py-2.5 rounded-md font-semibold hover:bg-blue-700 shrink-0"
         >
           + Novo Apresentador
         </button>
       </div>
 
-      {/* Tratamento de Erro e Loading */}
-      {erro && <div className="bg-red-100 text-red-700 p-4 rounded mb-6">{erro}</div>}
-      
+      <ListToolbar
+        search={busca}
+        onSearchChange={setBusca}
+        sortAsc={ordenarAsc}
+        onSortToggle={() => setOrdenarAsc((v) => !v)}
+        placeholder="Buscar por nome, telefone ou CPF..."
+        sortLabel="Nome"
+      />
+
+      {erro && (
+        <div className="bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 p-4 rounded mb-6 border border-red-200 dark:border-red-900">
+          {erro}
+        </div>
+      )}
+
       {isLoading ? (
-        <div className="text-center text-gray-500 py-10">Carregando dados...</div>
+        <div className="text-center text-gray-500 dark:text-gray-400 py-10">Carregando dados...</div>
       ) : (
-        /* Tabela com os dados */
-        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="table-surface">
+          <table className="min-w-full">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Telefone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPF</th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase">Nome</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase">Telefone</th>
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium uppercase">CPF</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase w-36">Ações</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {apresentadores.length === 0 ? (
+            <tbody>
+              {listaFiltrada.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                    Nenhum apresentador cadastrado.
+                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    Nenhum apresentador encontrado.
                   </td>
                 </tr>
               ) : (
-                apresentadores.map((apresentador) => (
-                  <tr key={apresentador.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{apresentador.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{apresentador.nome}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{apresentador.telefone}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{apresentador.cpf}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                      <button onClick={() => handleEditar(apresentador)} className="text-muttley-action hover:text-muttley-dark">Editar</button>
-                      <button onClick={() => handleExcluir(apresentador.id, apresentador.nome)} className="text-red-600 hover:text-red-900">Excluir</button>
+                listaFiltrada.map((apresentador) => (
+                  <tr key={apresentador.id} className="border-t border-gray-200 dark:border-gray-700">
+                    <td className="px-4 py-3 text-sm font-medium">{apresentador.nome}</td>
+                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {apresentador.telefone}
+                    </td>
+                    <td className="hidden md:table-cell px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {apresentador.cpf}
+                    </td>
+                    <td className="px-4 py-3">
+                      <TableRowActions
+                        onView={() => setDetalheAberto(apresentador)}
+                        onEdit={() => handleEditar(apresentador)}
+                        onDelete={() => handleExcluir(apresentador.id, apresentador.nome)}
+                      />
                     </td>
                   </tr>
                 ))
@@ -132,20 +168,25 @@ export default function apresentadoresPage() {
           </table>
         </div>
       )}
-      
-      {/* O Único Modal que serve para Criar e Editar */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         title={apresentadorSelecionado ? "Editar apresentador" : "Novo apresentador"}
       >
-        <ApresentadorForm 
-          dadosIniciais={apresentadorSelecionado} 
-          aoEnviar={handleSalvar} 
+        <ApresentadorForm
+          dadosIniciais={apresentadorSelecionado}
+          aoEnviar={handleSalvar}
           botaoTexto={apresentadorSelecionado ? "Salvar Alterações" : "Cadastrar apresentador"}
         />
       </Modal>
 
+      <DetailModal
+        isOpen={!!detalheAberto}
+        onClose={() => setDetalheAberto(null)}
+        title="Detalhes do apresentador"
+        fields={detalheAberto ? camposDetalhe(detalheAberto) : []}
+      />
     </div>
   );
 }

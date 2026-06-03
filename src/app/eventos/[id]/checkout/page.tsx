@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { eventoService } from "@/services/eventoService";
+import { muttleyAlert } from "@/lib/dialog";
 import { ArrowLeft, RefreshCw, ToggleLeft, ToggleRight } from "lucide-react";
 
 // No Next 15, params é uma Promise
@@ -39,7 +40,7 @@ export default function CheckoutQRCodePage({ params }: PageProps) {
           setUseEstatico(false);
         }
       } catch (e) {
-        alert("Erro ao buscar dados do check-out.");
+        await muttleyAlert("Erro ao buscar dados do check-out.");
         router.push("/eventos");
       } finally {
         setLoading(false);
@@ -73,14 +74,14 @@ export default function CheckoutQRCodePage({ params }: PageProps) {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-50"><Header /><div className="text-center py-20">Montando painel de QR Code...</div></div>;
+  if (loading) return <div className="page-shell"><div className="text-center py-20 text-gray-600 dark:text-gray-300">Montando painel de QR Code...</div></div>;
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const linkCheckout = `${baseUrl}/checkout-aluno/${id}?token=${tokenAtual}`;
+  const linkCheckout = `${baseUrl}/checkout-participante/${id}?token=${tokenAtual}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=${encodeURIComponent(linkCheckout)}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-shell">
       <main className="max-w-md mx-auto px-4 py-12">
         <button onClick={() => router.push("/eventos")} className="flex items-center gap-1 text-sm font-bold text-gray-600 hover:text-gray-900 mb-6 bg-white px-3 py-1.5 rounded-lg border shadow-sm transition-colors">
           <ArrowLeft className="w-4 h-4" /> Voltar para Eventos

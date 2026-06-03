@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.81:8083";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8083";
 
 export async function apiFetch(endpoint: string, options?: RequestInit) {
   const token = typeof window !== "undefined" ? localStorage.getItem("muttley_token") : null;
@@ -24,7 +24,7 @@ export async function apiFetch(endpoint: string, options?: RequestInit) {
       // Só redireciona à força se ele estiver numa rota estritamente privada
       const publicRoutes = ["/eventos", "/login", "/"];
       const currentPath = window.location.pathname;
-      const isPublic = publicRoutes.includes(currentPath) || currentPath.startsWith("/checkout-aluno");
+      const isPublic = publicRoutes.includes(currentPath) || currentPath.startsWith("/checkout-participante");
       
       if (!isPublic) {
         window.location.href = "/login";

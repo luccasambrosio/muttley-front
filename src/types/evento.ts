@@ -13,8 +13,12 @@ export interface Evento {
   tokenCheckoutEstatico?: string;
   tokenCheckoutDinamico?: string;
   apresentadores: Apresentador[];
+  gestorCriadorId?: number;
+  gestorCriadorNome?: string;
+  assinaturaDescricao?: string;
+  totalInscritos?: number;
 }
 
-export interface EventoFormData extends Omit<Evento, "id" | "tokenCheckoutEstatico" | "tokenCheckoutDinamico" | "apresentadores"> {
+export interface EventoFormData extends Omit<Evento, "id" | "tokenCheckoutEstatico" | "tokenCheckoutDinamico" | "apresentadores" | "gestorCriadorId" | "gestorCriadorNome" | "totalInscritos"> {
   apresentadoresIds: number[];
 }

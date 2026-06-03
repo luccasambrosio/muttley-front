@@ -9,7 +9,7 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 // No Next 15, params é uma Promise
 interface PageProps { params: Promise<{ eventoId: string }> }
 
-export default function AlunoCheckoutPage({ params }: PageProps) {
+export default function ParticipanteCheckoutPage({ params }: PageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -33,7 +33,7 @@ export default function AlunoCheckoutPage({ params }: PageProps) {
       const muttleyToken = localStorage.getItem("muttley_token");
       const userStr = localStorage.getItem("muttley_user");
 
-      if (!muttleyToken || !userStr || JSON.parse(userStr).role !== "ALUNO") {
+      if (!muttleyToken || !userStr || JSON.parse(userStr).role !== "PARTICIPANTE") {
         sessionStorage.setItem("redirect_after_login", window.location.pathname + window.location.search);
         router.push("/login");
         return;
@@ -57,24 +57,24 @@ export default function AlunoCheckoutPage({ params }: PageProps) {
   }, [eventoId, token, router]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-shell">
       <main className="max-w-md mx-auto px-4 py-20 text-center">
-        <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100 flex flex-col items-center">
+        <div className="card-surface rounded-2xl p-8 shadow-xl flex flex-col items-center">
           
           {status === "PROCESSANDO" && (
             <>
               <Loader2 className="w-16 h-16 text-blue-600 animate-spin mb-4" />
-              <h1 className="text-xl font-bold">Validando Saída...</h1>
-              <p className="text-gray-500 text-sm mt-2">Aguarde enquanto registramos seu check-out.</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Validando Saída...</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Aguarde enquanto registramos seu check-out.</p>
             </>
           )}
 
           {status === "SUCESSO" && (
             <>
               <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-              <h1 className="text-2xl font-black text-gray-900">Sucesso!</h1>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white">Sucesso!</h1>
               <p className="text-green-700 font-medium mt-2">{mensagem}</p>
-              <button onClick={() => router.push("/eventos")} className="mt-8 bg-gray-100 text-gray-700 px-6 py-2 rounded-lg font-bold hover:bg-gray-200">
+              <button onClick={() => router.push("/eventos")} className="mt-8 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg font-bold hover:bg-gray-200 dark:hover:bg-gray-700">
                 Voltar aos Eventos
               </button>
             </>
@@ -83,7 +83,7 @@ export default function AlunoCheckoutPage({ params }: PageProps) {
           {status === "ERRO" && (
             <>
               <XCircle className="w-16 h-16 text-red-500 mb-4" />
-              <h1 className="text-2xl font-black text-gray-900">Atenção</h1>
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white">Atenção</h1>
               <p className="text-red-600 font-medium mt-2">{mensagem}</p>
               <button onClick={() => router.push("/eventos")} className="mt-8 bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700">
                 Tentar Novamente

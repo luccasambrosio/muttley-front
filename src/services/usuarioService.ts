@@ -8,8 +8,8 @@ export const usuarioService = {
     });
   },
 
-  loginAluno: (dados: any): Promise<any> => {
-    return apiFetch("/auth/login/aluno", {
+  loginParticipante: (dados: any): Promise<any> => {
+    return apiFetch("/auth/login/participante", {
       method: "POST",
       body: JSON.stringify(dados),
     });

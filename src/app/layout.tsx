@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header"; // Importando o Header
+import Header from "@/components/Header";
+import { DialogProvider } from "@/components/DialogProvider";
+import DialogRegistrar from "@/components/DialogRegistrar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,14 +19,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-br">
-      <body className={inter.className}>
-        {/* O Header fica aqui, fora do {children} */}
-        <Header />
-        
-        {/* O children representa a página que está sendo acessada no momento */}
-        <main>
-          {children}
-        </main>
+      <body className={`${inter.className} min-h-screen`}>
+        <DialogProvider>
+          <DialogRegistrar />
+          <Header />
+          <main>
+            {children}
+          </main>
+        </DialogProvider>
       </body>
     </html>
   );
