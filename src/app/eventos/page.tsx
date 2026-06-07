@@ -25,9 +25,6 @@ export default function EventosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [eventoEditando, setEventoEditando] = useState<any | null>(null);
 
-  const [isIngressoModalOpen, setIsIngressoModalOpen] = useState(false);
-  const [eventoDoIngresso, setEventoDoIngresso] = useState<any | null>(null);
-
   const [isInscricaoModalOpen, setIsInscricaoModalOpen] = useState(false);
   const [eventoSelecionado, setEventoSelecionado] = useState<number | null>(null);
   const [cpf, setCpf] = useState("");
@@ -202,11 +199,6 @@ export default function EventosPage() {
     }
   };
 
-  const abrirIngresso = (evento: any) => {
-    setEventoDoIngresso(evento);
-    setIsIngressoModalOpen(true);
-  };
-
   return (
     <div className="page-shell">
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -336,13 +328,7 @@ export default function EventosPage() {
                           </button>
                         ) : (
                           <div className="flex w-full gap-2">
-                            <button 
-                              onClick={() => abrirIngresso(evento)} 
-                              disabled={isThisLoading}
-                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg flex justify-center items-center gap-1 transition-colors disabled:opacity-50"
-                            >
-                              <QrCode className="w-4 h-4" /> Ingresso
-                            </button>
+                            
                             <button 
                               onClick={() => handleCancelarInscricao(evento.id)} 
                               disabled={isThisLoading}
@@ -375,7 +361,7 @@ export default function EventosPage() {
 
         <Modal isOpen={isInscricaoModalOpen} onClose={() => setIsInscricaoModalOpen(false)} title="Confirmar Inscrição">
           <form onSubmit={confirmarInscricaoDeslogado} className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Insira seu CPF e Data de Nascimento para emitir o ingresso.</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Insira seu CPF e Data de Nascimento para participar do evento</p>
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-1">CPF</label>
               <input type="text" required value={cpf} onChange={e => setCpf(e.target.value)} className="field-input" placeholder="111.111.111-11" />
@@ -385,39 +371,12 @@ export default function EventosPage() {
               <input type="date" required value={dataNascimento} onChange={e => setDataNascimento(e.target.value)} className="field-input" />
             </div>
             <button type="submit" disabled={loadingEventId !== null} className="w-full bg-green-600 text-white font-bold py-3 rounded hover:bg-green-700 mt-2 disabled:bg-green-400">
-              {loadingEventId !== null ? "Processando..." : "Gerar Ingresso"}
+              {loadingEventId !== null ? "Processando..." : "Participar do evento"}
             </button>
           </form>
         </Modal>
 
-        {/* ---> O INGRESSO DO PARTICIPANTE (GERA O JSON COM CPF E EVENTO) <--- */}
-        <Modal isOpen={isIngressoModalOpen} onClose={() => setIsIngressoModalOpen(false)} title="Seu Ingresso (Check-in)">
-          <div className="text-center p-4">
-            <h3 className="font-bold text-xl text-gray-900 mb-1">{eventoDoIngresso?.titulo}</h3>
-            <p className="text-sm text-gray-500 mb-6 flex items-center justify-center gap-1">
-              <Smartphone className="w-4 h-4" /> Apresente a tela na portaria do evento
-            </p>
-            
-            <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-inner inline-block mb-4">
-              {usuario?.cpf && eventoDoIngresso?.id ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(JSON.stringify({ cpf: usuario.cpf, eventoId: eventoDoIngresso.id }))}`} 
-                  alt="QR Code do Ingresso" 
-                  className="w-48 h-48 select-none"
-                />
-              ) : (
-                <div className="w-48 h-48 flex items-center justify-center text-gray-400">Dados incompletos</div>
-              )}
-            </div>
-            
-            <p className="text-xs font-bold font-mono text-gray-400 uppercase tracking-widest">
-              Identificação: {usuario?.cpf}
-            </p>
-          </div>
-        </Modal>
-
-      </main>
+          </main>
     </div>
   );
 }
